@@ -1,33 +1,25 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState } from 'react';
 import { 
   StyleSheet, 
   TextInput, 
   TouchableOpacity, 
   Alert, 
-  Animated, 
   Keyboard,
   TouchableWithoutFeedback,
   KeyboardAvoidingView,
+  View,
+  Text,
   Platform,
   KeyboardTypeOptions
 } from 'react-native';
-import { Text, View } from '@/components/Themed';
 import { useSchoolContext } from '@/components/SchoolContext';
-import { useNavigation } from '@react-navigation/native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Calendar, Clock } from 'lucide-react-native';
-
-
-type RootStackParamList = {
-  index: undefined;
-  two: undefined;
-};
 
 export default function InputScreen() {
   const { schoolData, setSchoolData } = useSchoolContext();
-  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [focusedInput, setFocusedInput] = useState<string | null>(null);
+  const [screen, setScreen] = useState<'year' | 'day'>('year'); // Tracks which screen is visible
 
   const validateDate = (date: string) => {
     const regex = /^\d{4}-([0-1]\d)-([0-3]\d)$/;
@@ -44,18 +36,10 @@ export default function InputScreen() {
   const validateInputs = () => {
     const newErrors: Record<string, string> = {};
 
-    if (!validateDate(schoolData.yearStart)) {
-      newErrors.yearStart = 'Please enter a valid date (YYYY-MM-DD)';
-    }
-    if (!validateDate(schoolData.yearEnd)) {
-      newErrors.yearEnd = 'Please enter a valid date (YYYY-MM-DD)';
-    }
-    if (!validateTime(schoolData.dayStart)) {
-      newErrors.dayStart = 'Please enter a valid time (HH:MM)';
-    }
-    if (!validateTime(schoolData.dayEnd)) {
-      newErrors.dayEnd = 'Please enter a valid time (HH:MM)';
-    }
+    if (!validateDate(schoolData.yearStart)) newErrors.yearStart = 'Enter a valid date (YYYY-MM-DD)';
+    if (!validateDate(schoolData.yearEnd)) newErrors.yearEnd = 'Enter a valid date (YYYY-MM-DD)';
+    if (!validateTime(schoolData.dayStart)) newErrors.dayStart = 'Enter a valid time (HH:MM)';
+    if (!validateTime(schoolData.dayEnd)) newErrors.dayEnd = 'Enter a valid time (HH:MM)';
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -63,12 +47,8 @@ export default function InputScreen() {
 
   const saveData = () => {
     if (validateInputs()) {
-      setSchoolData({...schoolData});
-      Alert.alert(
-        'Success', 
-        'School timer settings saved successfully!',
-        [{ text: 'View Timer', onPress: () => navigation.navigate('two') }]
-      );
+      setSchoolData({ ...schoolData });
+      Alert.alert('Success', 'School timer settings saved successfully!');
     }
   };
 
@@ -81,11 +61,9 @@ export default function InputScreen() {
 
   const getInputProps = (key: string) => {
     const isDate = key.includes('year');
-    const isTime = key.includes('day');
-    
     return {
       placeholder: isDate ? 'YYYY-MM-DD' : 'HH:MM',
-      keyboardType: (Platform.OS === 'ios' ? 'default' : 'numeric') as KeyboardTypeOptions, // Explicitly cast
+      keyboardType: (Platform.OS === 'ios' ? 'default' : 'numeric') as KeyboardTypeOptions,
       maxLength: isDate ? 10 : 5,
       onFocus: () => setFocusedInput(key),
       onBlur: () => setFocusedInput(null),
@@ -105,10 +83,7 @@ export default function InputScreen() {
           focusedInput === key && styles.inputFocused,
           errors[key] && styles.inputError
         ]}>
-          <Icon 
-            size={18} 
-            color={errors[key] ? '#dc2626' : focusedInput === key ? '#4CAF50' : '#666'} 
-          />
+          <Icon size={18} color={errors[key] ? '#dc2626' : focusedInput === key ? '#4CAF50' : '#666'} />
           <TextInput
             {...getInputProps(key)}
             style={styles.input}
@@ -116,43 +91,48 @@ export default function InputScreen() {
             onChangeText={(text) => updateSchoolData(key, text)}
           />
         </View>
-        {errors[key] && (
-          <Text style={styles.errorText}>{errors[key]}</Text>
-        )}
+        {errors[key] && <Text style={styles.errorText}>{errors[key]}</Text>}
       </View>
     );
   };
 
   return (
-    
     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-      <KeyboardAvoidingView 
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.container}
-      >
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.container}>
         <View style={styles.content}>
           <Text style={styles.title}>School Timer Setup</Text>
-          <Text style={styles.subtitle}>Enter your school schedule details</Text>
-          
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>School Year</Text>
-            {renderInputGroup('yearStart')}
-            {renderInputGroup('yearEnd')}
-          </View>
+          <Text style={styles.subtitle}>
+            {screen === 'year' ? 'Enter your school year details' : 'Enter your daily schedule'}
+          </Text>
 
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Daily Schedule</Text>
-            {renderInputGroup('dayStart')}
-            {renderInputGroup('dayEnd')}
-          </View>
-
-          <TouchableOpacity
-            style={styles.saveButton}
-            onPress={saveData}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.saveButtonText}>Save Schedule</Text>
-          </TouchableOpacity>
+          {screen === 'year' ? (
+            <>
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>School Year</Text>
+                {renderInputGroup('yearStart')}
+                {renderInputGroup('yearEnd')}
+              </View>
+              <TouchableOpacity style={styles.nextButton} onPress={() => setScreen('day')}>
+                <Text style={styles.nextButtonText}>Next</Text>
+              </TouchableOpacity>
+            </>
+          ) : (
+            <>
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Daily Schedule</Text>
+                {renderInputGroup('dayStart')}
+                {renderInputGroup('dayEnd')}
+              </View>
+              <View style={styles.buttonRow}>
+                <TouchableOpacity style={styles.backButton} onPress={() => setScreen('year')}>
+                  <Text style={styles.backButtonText}>Back</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.saveButton} onPress={saveData}>
+                  <Text style={styles.saveButtonText}>Save Schedule</Text>
+                </TouchableOpacity>
+              </View>
+            </>
+          )}
         </View>
       </KeyboardAvoidingView>
     </TouchableWithoutFeedback>
@@ -160,82 +140,25 @@ export default function InputScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  content: {
-    flex: 1,
-    padding: 20,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    marginBottom: 8,
-    textAlign: 'center',
-  },
-  subtitle: {
-    fontSize: 16,
-    color: '#666',
-    marginBottom: 30,
-    textAlign: 'center',
-  },
-  section: {
-    marginBottom: 24,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    marginBottom: 16,
-    color: '#444',
-  },
-  inputGroup: {
-    marginBottom: 16,
-  },
-  label: {
-    fontSize: 14,
-    marginBottom: 8,
-    color: '#444',
-    textTransform: 'capitalize',
-  },
-  inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    height: 48,
-    backgroundColor: '#fff',
-  },
-  inputFocused: {
-    borderColor: '#4CAF50',
-    borderWidth: 2,
-  },
-  inputError: {
-    borderColor: '#dc2626',
-    borderWidth: 2,
-  },
-  input: {
-    flex: 1,
-    marginLeft: 8,
-    fontSize: 16,
-  },
-  errorText: {
-    color: '#dc2626',
-    fontSize: 12,
-    marginTop: 4,
-  },
-  saveButton: {
-    backgroundColor: '#4CAF50',
-    paddingVertical: 16,
-    borderRadius: 8,
-    alignItems: 'center',
-    marginTop: 24,
-  },
-  saveButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-
+  container: { flex: 1 },
+  content: { flex: 1, padding: 20 },
+  title: { fontSize: 28, fontWeight: 'bold', marginBottom: 8, textAlign: 'center' },
+  subtitle: { fontSize: 16, color: '#666', marginBottom: 30, textAlign: 'center' },
+  section: { marginBottom: 24 },
+  sectionTitle: { fontSize: 18, fontWeight: '600', marginBottom: 16, color: '#444' },
+  inputGroup: { marginBottom: 16 },
+  label: { fontSize: 14, marginBottom: 8, color: '#444', textTransform: 'capitalize' },
+  inputContainer: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: '#ddd', borderRadius: 8, paddingHorizontal: 12, height: 48, backgroundColor: '#fff' },
+  inputFocused: { borderColor: '#4CAF50', borderWidth: 2 },
+  inputError: { borderColor: '#dc2626', borderWidth: 2 },
+  input: { flex: 1, marginLeft: 8, fontSize: 16 },
+  errorText: { color: '#dc2626', fontSize: 12, marginTop: 4 },
+  nextButton: { backgroundColor: '#4CAF50', paddingVertical: 16, borderRadius: 8, alignItems: 'center', marginTop: 24 },
+  nextButtonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
+  buttonRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 24 },
+  backButton: { backgroundColor: '#ddd', paddingVertical: 16, paddingHorizontal: 32, borderRadius: 8 },
+  backButtonText: { color: '#444', fontSize: 16, fontWeight: '600' },
+  saveButton: { backgroundColor: '#4CAF50', paddingVertical: 16, paddingHorizontal: 32, borderRadius: 8 },
+  saveButtonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
 });
+
