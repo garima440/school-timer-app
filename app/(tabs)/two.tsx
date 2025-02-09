@@ -18,6 +18,9 @@ export default function TimerScreen() {
   const progressAnimation = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
+    if (!schoolData.yearStart || !schoolData.yearEnd || !schoolData.dayStart || !schoolData.dayEnd) {
+      return;
+    }
     const timer = setInterval(updateCountdown, 1000);
     return () => clearInterval(timer);
   }, [schoolData]);
@@ -68,46 +71,60 @@ export default function TimerScreen() {
 
   const updateCountdown = () => {
     const now = new Date();
-    
-    // Parse times
-    const [startHours, startMinutes] = schoolData.dayStart.split(':').map(Number);
-    const [endHours, endMinutes] = schoolData.dayEnd.split(':').map(Number);
-    
+  
+    // Check if schoolData is initialized properly
+    if (!schoolData.yearStart || !schoolData.yearEnd || !schoolData.dayStart || !schoolData.dayEnd) {
+      return;
+    }
+  
+    // Parse times safely
+    const [startHours, startMinutes] = schoolData.dayStart.split(":").map(Number);
+    const [endHours, endMinutes] = schoolData.dayEnd.split(":").map(Number);
+  
+    if (isNaN(startHours) || isNaN(startMinutes) || isNaN(endHours) || isNaN(endMinutes)) {
+      return;
+    }
+  
     const dayStart = new Date();
     const dayEnd = new Date();
-    
     dayStart.setHours(startHours, startMinutes, 0, 0);
     dayEnd.setHours(endHours, endMinutes, 0, 0);
-
-    // Calculate school year days
-    const yearEnd = new Date(schoolData.yearEnd);
+  
+    // Ensure valid dates for the school year
     const yearStart = new Date(schoolData.yearStart);
+    const yearEnd = new Date(schoolData.yearEnd);
+  
+    if (isNaN(yearStart.getTime()) || isNaN(yearEnd.getTime())) {
+      return;
+    }
+  
+    // Calculate school year days
     const totalDays = Math.ceil((yearEnd.getTime() - yearStart.getTime()) / (1000 * 60 * 60 * 24));
     const remainingDays = Math.ceil((yearEnd.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-    const progress = (totalDays - remainingDays) / totalDays;
-    
+    const progress = totalDays > 0 ? (totalDays - remainingDays) / totalDays : 0;
+  
     // Update progress animation
     Animated.timing(progressAnimation, {
       toValue: progress,
       duration: 1000,
       useNativeDriver: false,
     }).start();
-    
-    setDaysLeft(remainingDays);
-
+  
+    setDaysLeft(remainingDays > 0 ? remainingDays : 0);
+  
     // Calculate start time countdown
     if (now < dayStart) {
       const diffStart = dayStart.getTime() - now.getTime();
       setStartCountdown({
         hours: Math.floor(diffStart / (1000 * 60 * 60)),
         minutes: Math.floor((diffStart % (1000 * 60 * 60)) / (1000 * 60)),
-        seconds: Math.floor((diffStart % (1000 * 60)) / 1000)
+        seconds: Math.floor((diffStart % (1000 * 60)) / 1000),
       });
       setSchoolStarted(false);
     } else {
       setSchoolStarted(true);
     }
-
+  
     // Calculate end time countdown
     if (now > dayEnd) {
       setSchoolEnded(true);
@@ -116,13 +133,13 @@ export default function TimerScreen() {
       setEndCountdown({
         hours: Math.floor(diffEnd / (1000 * 60 * 60)),
         minutes: Math.floor((diffEnd % (1000 * 60 * 60)) / (1000 * 60)),
-        seconds: Math.floor((diffEnd % (1000 * 60)) / 1000)
+        seconds: Math.floor((diffEnd % (1000 * 60)) / 1000),
       });
       setSchoolEnded(false);
     }
   };
 
-  const AnimatedNumber = ({ number, animation }) => {
+  const AnimatedNumber: React.FC<{ number: number; animation: Animated.Value }> = ({ number, animation }) => {
     const scale = animation.interpolate({
       inputRange: [0, 0.5, 1],
       outputRange: [1, 1.2, 1],

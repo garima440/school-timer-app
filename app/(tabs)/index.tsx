@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { 
   StyleSheet, 
   TextInput, 
@@ -16,6 +16,7 @@ import { useSchoolContext } from '@/components/SchoolContext';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Calendar, Clock } from 'lucide-react-native';
+
 
 type RootStackParamList = {
   index: undefined;
@@ -123,6 +124,7 @@ export default function InputScreen() {
   };
 
   return (
+    
     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
       <KeyboardAvoidingView 
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -235,4 +237,5 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
+
 });

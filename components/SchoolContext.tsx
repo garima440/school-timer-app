@@ -17,10 +17,10 @@ const SchoolContext = createContext<SchoolContextType | undefined>(undefined);
 
 export const SchoolProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [schoolData, setSchoolData] = useState<SchoolData>({
-    yearStart: '',
-    yearEnd: '',
-    dayStart: '',
-    dayEnd: '',
+    yearStart: "",
+    yearEnd: "",
+    dayStart: "",
+    dayEnd: "",
   });
 
   return (
