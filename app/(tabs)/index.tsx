@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { 
   StyleSheet, 
   TextInput, 
@@ -10,16 +10,18 @@ import {
   View,
   Text,
   Platform,
-  KeyboardTypeOptions
+  KeyboardTypeOptions,
 } from 'react-native';
 import { useSchoolContext } from '@/components/SchoolContext';
 import { Calendar, Clock } from 'lucide-react-native';
+import LottieView from 'lottie-react-native';
 
 export default function InputScreen() {
   const { schoolData, setSchoolData } = useSchoolContext();
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [focusedInput, setFocusedInput] = useState<string | null>(null);
   const [screen, setScreen] = useState<'year' | 'day'>('year'); // Tracks which screen is visible
+  const animation = useRef<LottieView>(null);
 
   const validateDate = (date: string) => {
     const regex = /^\d{4}-([0-1]\d)-([0-3]\d)$/;
@@ -76,7 +78,9 @@ export default function InputScreen() {
     const label = key.replace(/([A-Z])/g, ' $1').toLowerCase();
 
     return (
+      
       <View key={key} style={styles.inputGroup}>
+        
         <Text style={styles.label}>{label}</Text>
         <View style={[
           styles.inputContainer,
@@ -109,6 +113,18 @@ export default function InputScreen() {
             <>
               <View style={styles.section}>
                 <Text style={styles.sectionTitle}>School Year</Text>
+                <LottieView
+                autoPlay
+                ref={animation}
+                style={{
+                  width: 200,
+                  height: 200,
+                 
+                  
+                }}
+                // Find more Lottie files at https://lottiefiles.com/featured
+                source={require('@/assets/animations/hi.json')}
+              />
                 {renderInputGroup('yearStart')}
                 {renderInputGroup('yearEnd')}
               </View>
